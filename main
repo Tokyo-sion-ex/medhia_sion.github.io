@@ -1,0 +1,1988 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube風動画プレイヤー - 検索機能強化版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-primary: #0f0f0f;
+            --bg-secondary: #272727;
+            --bg-tertiary: #121212;
+            --text-primary: #f1f1f1;
+            --text-secondary: #aaa;
+            --accent-color: #ff0000;
+            --border-color: #303030;
+            --hover-color: #272727;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .light-mode {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9f9f9;
+            --bg-tertiary: #f1f1f1;
+            --text-primary: #0f0f0f;
+            --text-secondary: #606060;
+            --accent-color: #ff0000;
+            --border-color: #e5e5e5;
+            --hover-color: #f2f2f2;
+            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* カラーテーマ */
+        .theme-red {
+            --accent-color: #ff0000;
+        }
+        .theme-blue {
+            --accent-color: #3ea6ff;
+        }
+        .theme-green {
+            --accent-color: #4CAF50;
+        }
+        .theme-yellow {
+            --accent-color: #ffd600;
+        }
+        .theme-black {
+            --accent-color: #000000;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto', 'Arial', sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+        }
+        
+        /* サイドバー */
+        .sidebar {
+            width: 240px;
+            background-color: var(--bg-primary);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 12px;
+            border-right: 1px solid var(--border-color);
+        }
+        
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+        
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 4px;
+            transition: background 0.2s;
+        }
+        
+        .sidebar-item:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .sidebar-item.active {
+            background-color: var(--hover-color);
+        }
+        
+        .sidebar-item i {
+            margin-right: 24px;
+            font-size: 20px;
+        }
+        
+        .sidebar-divider {
+            height: 1px;
+            background-color: var(--border-color);
+            margin: 16px 0;
+        }
+        
+        .sidebar-subtitle {
+            padding: 8px 24px 6px 12px;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        /* メインコンテンツ */
+        .main-content {
+            flex: 1;
+            margin-left: 240px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* ヘッダー */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            height: 56px;
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-primary);
+            z-index: 100;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo i {
+            color: var(--accent-color);
+            font-size: 28px;
+            margin-right: 4px;
+        }
+        
+        .logo-text {
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .search-bar {
+            display: flex;
+            align-items: center;
+            flex: 0 1 728px;
+            margin: 0 40px;
+            position: relative;
+        }
+        
+        .search-input {
+            flex: 1;
+            height: 40px;
+            padding: 0 16px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+            border-radius: 20px 0 0 20px;
+            color: var(--text-primary);
+        }
+        
+        .search-button {
+            height: 40px;
+            width: 64px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0 20px 20px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+        
+        .search-button:hover {
+            background-color: var(--hover-color);
+        }
+        
+        /* HTML Cafe風検索サジェスト */
+        .search-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 64px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 101;
+            display: none;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .search-suggestions.active {
+            display: block;
+        }
+        
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+        
+        .suggestion-item:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .suggestion-item i {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+        
+        .suggestion-text {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        
+        .header-icons {
+            display: flex;
+            align-items: center;
+        }
+        
+        .icon-button {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            margin-left: 24px;
+            cursor: pointer;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 20px;
+            margin-left: 24px;
+            cursor: pointer;
+        }
+        
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            margin-left: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+        
+        /* コンテンツレイアウト */
+        .content-layout {
+            display: flex;
+            gap: 24px;
+        }
+        
+        /* 動画プレイヤー */
+        .video-player-container {
+            flex: 2;
+            min-width: 0;
+        }
+        
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            background-color: #000;
+        }
+        
+        .video-wrapper iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+        
+        .video-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        
+        .video-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .video-stats {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .action-buttons {
+            display: flex;
+        }
+        
+        .action-button {
+            display: flex;
+            align-items: center;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            margin-left: 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        
+        .action-button:hover {
+            color: var(--text-primary);
+        }
+        
+        .action-button i {
+            margin-right: 6px;
+            font-size: 16px;
+        }
+        
+        /* 動画情報 */
+        .video-info {
+            display: flex;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+            align-items: flex-start;
+        }
+        
+        .channel-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            margin-right: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+        
+        .channel-info {
+            flex: 1;
+        }
+        
+        .video-description {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 12px;
+            margin-top: 0;
+            font-size: 14px;
+            line-height: 1.8;
+            color: var(--text-primary);
+        }
+        
+        .video-actions-right {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-left: 16px;
+        }
+        
+        .subscribe-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        
+        .subscribe-button:hover {
+            background-color: var(--accent-color);
+            filter: brightness(0.8);
+        }
+        
+        .delete-button {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        .delete-button:hover {
+            background-color: #ff4d4d;
+            color: white;
+            border-color: #ff4d4d;
+        }
+        
+        /* 動画リスト */
+        .video-list-sidebar {
+            flex: 1;
+            max-width: 400px;
+            background-color: var(--bg-primary);
+            border-radius: 12px;
+            padding: 16px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+        
+        .video-list-title {
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .video-card {
+            display: flex;
+            margin-bottom: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            padding: 8px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .video-card:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .video-card-delete {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
+        }
+        
+        .video-card:hover .video-card-delete {
+            opacity: 1;
+        }
+        
+        .thumbnail-container {
+            position: relative;
+            width: 168px;
+            height: 94px;
+            margin-right: 12px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: var(--bg-secondary);
+            flex-shrink: 0;
+        }
+        
+        .thumbnail {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .video-duration {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .video-card-details {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .video-card-title {
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 14px;
+            line-height: 1.4;
+            color: var(--text-primary);
+        }
+        
+        .video-card-channel {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        
+        .video-card-meta {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        /* 追加フォーム */
+        .add-video-form {
+            background-color: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 24px;
+            display: none;
+        }
+        
+        .add-video-form.active {
+            display: block;
+        }
+        
+        .form-title {
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .input-group {
+            margin-bottom: 16px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-tertiary);
+            border-radius: 6px;
+            font-size: 16px;
+            color: var(--text-primary);
+        }
+        
+        .submit-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .submit-button:hover {
+            background-color: var(--accent-color);
+            filter: brightness(0.8);
+        }
+        
+        /* 登録完了メッセージ */
+        .success-message {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 6px;
+            margin-top: 16px;
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .success-message.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* 履歴ページ */
+        .history-page {
+            display: none;
+            width: 100%;
+        }
+        
+        .history-title {
+            font-size: 24px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+        
+        .history-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        
+        .history-item {
+            background-color: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 16px;
+            transition: transform 0.2s;
+        }
+        
+        .history-item:hover {
+            transform: translateY(-4px);
+        }
+        
+        .history-thumbnail {
+            width: 100%;
+            height: 160px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            background-color: var(--bg-tertiary);
+        }
+        
+        .history-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .history-item-title {
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 16px;
+            color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .history-item-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .history-item-date {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .empty-history {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .empty-history i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        
+        /* 検索結果ページ */
+        .search-results-page {
+            display: none;
+            width: 100%;
+        }
+        
+        .search-results-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .search-results-count {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-left: 12px;
+        }
+        
+        .search-results-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .no-results i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        
+        /* 検索フィルター */
+        .search-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .filter-button {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .filter-button:hover {
+            background-color: var(--hover-color);
+        }
+        
+        .filter-button.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+        
+        /* 操作説明 */
+        .help-button {
+            position: fixed;
+            bottom: 20px;
+            left: 260px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+        
+        .help-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .help-overlay {
+            position: fixed;
+            bottom: 80px;
+            left: 260px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            width: 320px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+        
+        .help-overlay.active {
+            display: block;
+            animation: slideUp 0.3s;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .help-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .help-list {
+            list-style-type: none;
+        }
+        
+        .help-item {
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .help-item i {
+            color: var(--accent-color);
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        
+        .help-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+        }
+        
+        /* 設定メニュー */
+        .settings-menu {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            width: 200px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            display: none;
+        }
+        
+        .settings-menu.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        .settings-title {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+        
+        .theme-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .theme-option {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .theme-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-option.active {
+            border-color: var(--text-primary);
+        }
+        
+        .theme-red-option {
+            background-color: #ff0000;
+        }
+        
+        .theme-blue-option {
+            background-color: #3ea6ff;
+        }
+        
+        .theme-green-option {
+            background-color: #4CAF50;
+        }
+        
+        .theme-yellow-option {
+            background-color: #ffd600;
+        }
+        
+        .theme-black-option {
+            background-color: #000000;
+        }
+        
+        /* レスポンシブ */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 72px;
+            }
+            
+            .sidebar-item span {
+                display: none;
+            }
+            
+            .sidebar-item i {
+                margin-right: 0;
+            }
+            
+            .sidebar-subtitle, .sidebar-divider {
+                display: none;
+            }
+            
+            .main-content {
+                margin-left: 72px;
+            }
+            
+            .video-wrapper iframe {
+                height: 400px;
+            }
+            
+            .help-button, .help-overlay {
+                left: 92px;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .content-layout {
+                flex-direction: column;
+            }
+            
+            .video-list-sidebar {
+                max-width: 100%;
+                order: 2;
+            }
+            
+            .video-player-container {
+                order: 1;
+            }
+            
+            .video-wrapper iframe {
+                height: 400px;
+            }
+            
+            .history-list, .search-results-list {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .search-bar {
+                flex: 0 1 400px;
+            }
+            
+            .video-wrapper iframe {
+                height: 300px;
+            }
+            
+            .video-info {
+                flex-direction: column;
+            }
+            
+            .video-actions-right {
+                margin-left: 0;
+                margin-top: 12px;
+                flex-direction: row;
+                align-self: flex-start;
+            }
+            
+            .help-overlay {
+                width: 280px;
+                left: 20px;
+                bottom: 80px;
+            }
+            
+            .help-button {
+                left: 20px;
+            }
+            
+            .settings-menu {
+                right: 10px;
+                width: 180px;
+            }
+            
+            .history-list, .search-results-list {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .search-bar {
+                display: none;
+            }
+            
+            .video-wrapper iframe {
+                height: 250px;
+            }
+            
+            .video-actions {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .action-buttons {
+                margin-top: 12px;
+                flex-wrap: wrap;
+            }
+            
+            .action-button {
+                margin-left: 0;
+                margin-right: 16px;
+            }
+            
+            .help-overlay {
+                width: calc(100% - 40px);
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="dark-mode theme-red">
+    <div class="container">
+        <!-- サイドバー -->
+        <div class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-item active" data-page="home">
+                    <i class="fas fa-home"></i>
+                    <span>ホーム</span>
+                </div>
+                <div class="sidebar-item" data-page="add-video">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>動画追加</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-divider"></div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-subtitle">あなた</div>
+                <div class="sidebar-item" data-page="history">
+                    <i class="fas fa-history"></i>
+                    <span>履歴</span>
+                </div>
+                <div class="sidebar-item">
+                    <i class="fas fa-clock"></i>
+                    <span>後で見る</span>
+                </div>
+                <div class="sidebar-item">
+                    <i class="fas fa-thumbs-up"></i>
+                    <span>高評価した動画</span>
+                </div>
+            </div>
+            
+            <div class="sidebar-divider"></div>
+            
+            <div class="sidebar-section">
+                <div class="sidebar-subtitle">おすすめ</div>
+                <div class="sidebar-item">
+                    <i class="fas fa-circle" style="color: var(--accent-color);"></i>
+                    <span>Music Channel</span>
+                </div>
+                <div class="sidebar-item">
+                    <i class="fas fa-circle" style="color: var(--accent-color);"></i>
+                    <span>Tech Reviews</span>
+                </div>
+                <div class="sidebar-item">
+                    <i class="fas fa-circle" style="color: var(--accent-color);"></i>
+                    <span>Cooking Tutorials</span>
+                </div>
+                <div class="sidebar-item">
+                    <i class="fas fa-circle" style="color: var(--accent-color);"></i>
+                    <span>Gaming Live</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- メインコンテンツ -->
+        <div class="main-content">
+            <!-- ヘッダー -->
+            <div class="header">
+                <div class="logo">
+                    <i class="fab fa-youtube"></i>
+                    <span class="logo-text">YouTube</span>
+                </div>
+                
+                <div class="search-bar">
+                    <input type="text" class="search-input" id="search-input" placeholder="検索" autocomplete="off">
+                    <button class="search-button" id="search-button">
+                        <i class="fas fa-search"></i>
+                    </button>
+                    <div class="search-suggestions" id="search-suggestions">
+                        <!-- 検索サジェストはJavaScriptで追加 -->
+                    </div>
+                </div>
+                
+                <div class="header-icons">
+                    <button class="theme-toggle" id="theme-toggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="icon-button" id="settings-button">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                    <button class="icon-button">
+                        <i class="fas fa-bell"></i>
+                    </button>
+                    <div class="user-avatar">T</div>
+                </div>
+            </div>
+            
+            <!-- ホームページ -->
+            <div class="content-layout" id="home-page">
+                <!-- 動画プレイヤー -->
+                <div class="video-player-container">
+                    <div class="video-wrapper">
+                        <iframe id="main-video" src="https://www.youtube.com/embed/dQw4w9WgXcQ" allowfullscreen></iframe>
+                    </div>
+                    
+                    <h1 class="video-title" id="video-title">Never Gonna Give You Up - Rick Astley (Official Music Video)</h1>
+                    
+                    <div class="video-actions">
+                        <div class="video-stats" id="video-stats">
+                            <span>1,234,567 回視聴</span> • <span>2023年10月15日</span>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-button">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span>12万</span>
+                            </button>
+                            <button class="action-button">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span>低評価</span>
+                            </button>
+                            <button class="action-button">
+                                <i class="fas fa-share"></i>
+                                <span>共有</span>
+                            </button>
+                            <button class="action-button">
+                                <i class="fas fa-save"></i>
+                                <span>保存</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="video-info">
+                        <div class="channel-avatar">R</div>
+                        <div class="channel-info">
+                            <div class="video-description" id="video-description">
+                                1987年にリリースされたRick Astleyの代表曲「Never Gonna Give You Up」の公式ミュージックビデオです。この曲は世界中で大ヒットし、インターネット文化において「Rickrolling」として知られる現象の元となりました。
+                            </div>
+                        </div>
+                        <div class="video-actions-right">
+                            <button class="subscribe-button">登録する</button>
+                            <button class="delete-button" id="delete-current-video">
+                                <i class="fas fa-trash"></i>
+                                <span>削除</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 動画リスト -->
+                <div class="video-list-sidebar">
+                    <h2 class="video-list-title">おすすめの動画</h2>
+                    <div id="video-list">
+                        <!-- 動画リストはJavaScriptで追加 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 動画追加ページ -->
+            <div class="add-video-page" id="add-video-page" style="display: none;">
+                <div class="add-video-form active">
+                    <h2 class="form-title">動画を追加</h2>
+                    <div class="input-group">
+                        <label for="video-url">YouTube動画URL</label>
+                        <input type="text" id="video-url" placeholder="https://www.youtube.com/watch?v=...">
+                    </div>
+                    <div class="input-group">
+                        <label for="video-title-input">動画タイトル</label>
+                        <input type="text" id="video-title-input" placeholder="動画のタイトル">
+                    </div>
+                    <div class="input-group">
+                        <label for="video-description-input">動画説明</label>
+                        <input type="text" id="video-description-input" placeholder="動画の説明">
+                    </div>
+                    <button class="submit-button" id="add-btn">動画を追加</button>
+                    <div class="success-message" id="success-message">
+                        登録完了！
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 履歴ページ -->
+            <div class="history-page" id="history-page">
+                <h1 class="history-title">アップロード履歴</h1>
+                <div class="history-list" id="history-list">
+                    <!-- 履歴リストはJavaScriptで追加 -->
+                </div>
+            </div>
+            
+            <!-- 検索結果ページ -->
+            <div class="search-results-page" id="search-results-page">
+                <div class="search-results-header">
+                    <h1 class="history-title">検索結果</h1>
+                    <div class="search-results-count" id="search-results-count"></div>
+                </div>
+                <div class="search-filters" id="search-filters">
+                    <button class="filter-button active" data-filter="all">すべて</button>
+                    <button class="filter-button" data-filter="music">音楽</button>
+                    <button class="filter-button" data-filter="tech">テクノロジー</button>
+                    <button class="filter-button" data-filter="cooking">料理</button>
+                    <button class="filter-button" data-filter="gaming">ゲーム</button>
+                </div>
+                <div class="search-results-list" id="search-results-list">
+                    <!-- 検索結果はJavaScriptで追加 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作説明ボタン -->
+    <button class="help-button" id="help-button">
+        <i class="fas fa-question"></i>
+    </button>
+    
+    <!-- 操作説明オーバーレイ -->
+    <div class="help-overlay" id="help-overlay">
+        <h3 class="help-title">
+            <i class="fas fa-info-circle"></i>
+            操作説明
+        </h3>
+        <ul class="help-list">
+            <li class="help-item">
+                <i class="fas fa-play-circle"></i>
+                <div class="help-text">
+                    <strong>動画再生</strong><br>
+                    動画リストから動画をクリックすると再生できます
+                </div>
+            </li>
+            <li class="help-item">
+                <i class="fas fa-search"></i>
+                <div class="help-text">
+                    <strong>動画検索</strong><br>
+                    検索バーにキーワードを入力するとサジェストが表示されます
+                </div>
+            </li>
+            <li class="help-item">
+                <i class="fas fa-plus-circle"></i>
+                <div class="help-text">
+                    <strong>動画追加</strong><br>
+                    左メニューの「動画追加」からYouTube動画を追加できます
+                </div>
+            </li>
+            <li class="help-item">
+                <i class="fas fa-history"></i>
+                <div class="help-text">
+                    <strong>履歴閲覧</strong><br>
+                    「履歴」から追加した動画の履歴を確認できます
+                </div>
+            </li>
+            <li class="help-item">
+                <i class="fas fa-trash"></i>
+                <div class="help-text">
+                    <strong>動画削除</strong><br>
+                    動画下の「削除」ボタンまたは動画リストの×ボタンで削除できます
+                </div>
+            </li>
+            <li class="help-item">
+                <i class="fas fa-moon"></i>
+                <div class="help-text">
+                    <strong>テーマ変更</strong><br>
+                    右上の月/太陽アイコンでダーク/ライトモードを切り替えられます
+                </div>
+            </li>
+            <li class="help-item">
+                <i class="fas fa-cog"></i>
+                <div class="help-text">
+                    <strong>カラーテーマ</strong><br>
+                    設定ボタンから5色のテーマを選択できます
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 設定メニュー -->
+    <div class="settings-menu" id="settings-menu">
+        <h3 class="settings-title">カラーテーマ</h3>
+        <div class="theme-options">
+            <div class="theme-option theme-red-option active" data-theme="red"></div>
+            <div class="theme-option theme-blue-option" data-theme="blue"></div>
+            <div class="theme-option theme-green-option" data-theme="green"></div>
+            <div class="theme-option theme-yellow-option" data-theme="yellow"></div>
+            <div class="theme-option theme-black-option" data-theme="black"></div>
+        </div>
+    </div>
+
+    <script>
+        // テーマ切り替え機能
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = themeToggle.querySelector('i');
+        
+        // ローカルストレージからテーマ設定を読み込む
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        const currentColorTheme = localStorage.getItem('colorTheme') || 'red';
+        
+        // 初期テーマ設定
+        if (currentTheme === 'light') {
+            document.body.classList.remove('dark-mode');
+            document.body.classList.add('light-mode');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+        }
+        
+        // 初期カラーテーマ設定
+        document.body.classList.add(`theme-${currentColorTheme}`);
+        document.querySelector(`.theme-${currentColorTheme}-option`).classList.add('active');
+        
+        // テーマ切り替え
+        themeToggle.addEventListener('click', () => {
+            if (document.body.classList.contains('light-mode')) {
+                // ダークモードに切り替え
+                document.body.classList.remove('light-mode');
+                document.body.classList.add('dark-mode');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                // ライトモードに切り替え
+                document.body.classList.remove('dark-mode');
+                document.body.classList.add('light-mode');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // 設定メニュー表示/非表示
+        const settingsButton = document.getElementById('settings-button');
+        const settingsMenu = document.getElementById('settings-menu');
+        
+        settingsButton.addEventListener('click', () => {
+            settingsMenu.classList.toggle('active');
+        });
+
+        // カラーテーマ変更
+        const themeOptions = document.querySelectorAll('.theme-option');
+        
+        themeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const theme = option.getAttribute('data-theme');
+                
+                // アクティブなテーマを更新
+                themeOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // テーマを適用
+                document.body.classList.remove('theme-red', 'theme-blue', 'theme-green', 'theme-yellow', 'theme-black');
+                document.body.classList.add(`theme-${theme}`);
+                
+                // ローカルストレージに保存
+                localStorage.setItem('colorTheme', theme);
+            });
+        });
+
+        // ページ切り替え機能
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        const homePage = document.getElementById('home-page');
+        const addVideoPage = document.getElementById('add-video-page');
+        const historyPage = document.getElementById('history-page');
+        const searchResultsPage = document.getElementById('search-results-page');
+        
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', () => {
+                // アクティブなアイテムを更新
+                sidebarItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // ページを切り替え
+                const page = item.getAttribute('data-page');
+                if (page === 'home') {
+                    homePage.style.display = 'flex';
+                    addVideoPage.style.display = 'none';
+                    historyPage.style.display = 'none';
+                    searchResultsPage.style.display = 'none';
+                } else if (page === 'add-video') {
+                    homePage.style.display = 'none';
+                    addVideoPage.style.display = 'block';
+                    historyPage.style.display = 'none';
+                    searchResultsPage.style.display = 'none';
+                } else if (page === 'history') {
+                    homePage.style.display = 'none';
+                    addVideoPage.style.display = 'none';
+                    historyPage.style.display = 'block';
+                    searchResultsPage.style.display = 'none';
+                    renderHistoryList();
+                }
+                
+                // 設定メニューを閉じる
+                settingsMenu.classList.remove('active');
+            });
+        });
+
+        // 操作説明表示/非表示機能
+        const helpButton = document.getElementById('help-button');
+        const helpOverlay = document.getElementById('help-overlay');
+        
+        helpButton.addEventListener('click', () => {
+            helpOverlay.classList.toggle('active');
+        });
+
+        // HTML Cafe風検索機能
+        const searchInput = document.getElementById('search-input');
+        const searchButton = document.getElementById('search-button');
+        const searchSuggestions = document.getElementById('search-suggestions');
+        
+        // 検索履歴
+        let searchHistory = JSON.parse(localStorage.getItem('searchHistory')) || [];
+        
+        // 検索サジェスト表示
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            if (query.length === 0) {
+                searchSuggestions.classList.remove('active');
+                return;
+            }
+            
+            // 検索サジェストを生成
+            const suggestions = generateSearchSuggestions(query);
+            renderSearchSuggestions(suggestions, query);
+        });
+        
+        // 検索ボタンクリック時の処理
+        searchButton.addEventListener('click', performSearch);
+        
+        // Enterキーでの検索
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+        
+        // クリックでサジェストを閉じる
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-bar')) {
+                searchSuggestions.classList.remove('active');
+            }
+        });
+        
+        function generateSearchSuggestions(query) {
+            const lowerCaseQuery = query.toLowerCase();
+            const suggestions = new Set();
+            
+            // 動画タイトルからサジェスト
+            videos.forEach(video => {
+                if (video.title.toLowerCase().includes(lowerCaseQuery)) {
+                    suggestions.add(video.title);
+                }
+            });
+            
+            // チャンネル名からサジェスト
+            videos.forEach(video => {
+                if (video.channel.toLowerCase().includes(lowerCaseQuery)) {
+                    suggestions.add(video.channel);
+                }
+            });
+            
+            // 検索履歴からサジェスト
+            searchHistory.forEach(history => {
+                if (history.toLowerCase().includes(lowerCaseQuery)) {
+                    suggestions.add(history);
+                }
+            });
+            
+            // 一般的な検索サジェスト
+            const commonSuggestions = [
+                `${query} 音楽`,
+                `${query} 公式`,
+                `${query} フル`,
+                `${query} カバー`,
+                `${query} ライブ`
+            ];
+            
+            commonSuggestions.forEach(suggestion => {
+                suggestions.add(suggestion);
+            });
+            
+            return Array.from(suggestions).slice(0, 8); // 最大8件
+        }
+        
+        function renderSearchSuggestions(suggestions, query) {
+            searchSuggestions.innerHTML = '';
+            
+            if (suggestions.length === 0) {
+                searchSuggestions.classList.remove('active');
+                return;
+            }
+            
+            // 検索履歴を表示
+            if (searchHistory.length > 0 && query.length === 0) {
+                searchHistory.slice(0, 5).forEach(history => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'suggestion-item';
+                    suggestionItem.innerHTML = `
+                        <i class="fas fa-history"></i>
+                        <div class="suggestion-text">${history}</div>
+                    `;
+                    suggestionItem.addEventListener('click', () => {
+                        searchInput.value = history;
+                        performSearch();
+                    });
+                    searchSuggestions.appendChild(suggestionItem);
+                });
+            } else {
+                // 検索サジェストを表示
+                suggestions.forEach(suggestion => {
+                    const suggestionItem = document.createElement('div');
+                    suggestionItem.className = 'suggestion-item';
+                    suggestionItem.innerHTML = `
+                        <i class="fas fa-search"></i>
+                        <div class="suggestion-text">${suggestion}</div>
+                    `;
+                    suggestionItem.addEventListener('click', () => {
+                        searchInput.value = suggestion;
+                        performSearch();
+                    });
+                    searchSuggestions.appendChild(suggestionItem);
+                });
+            }
+            
+            searchSuggestions.classList.add('active');
+        }
+        
+        function performSearch() {
+            const query = searchInput.value.trim();
+            
+            if (query === '') {
+                alert('検索キーワードを入力してください');
+                return;
+            }
+            
+            // 検索履歴に追加
+            if (!searchHistory.includes(query)) {
+                searchHistory.unshift(query);
+                if (searchHistory.length > 10) {
+                    searchHistory.pop();
+                }
+                localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+            }
+            
+            // 検索実行
+            const searchResults = searchVideos(query);
+            
+            // 検索結果ページを表示
+            homePage.style.display = 'none';
+            addVideoPage.style.display = 'none';
+            historyPage.style.display = 'none';
+            searchResultsPage.style.display = 'block';
+            
+            // サイドバーのアクティブ状態をリセット
+            sidebarItems.forEach(i => i.classList.remove('active'));
+            
+            // 検索結果を表示
+            renderSearchResults(searchResults, query);
+            
+            // サジェストを閉じる
+            searchSuggestions.classList.remove('active');
+        }
+        
+        function searchVideos(query) {
+            const lowerCaseQuery = query.toLowerCase();
+            
+            const results = videos.filter(video => {
+                const titleMatch = video.title.toLowerCase().includes(lowerCaseQuery);
+                const channelMatch = video.channel.toLowerCase().includes(lowerCaseQuery);
+                const descriptionMatch = video.description.toLowerCase().includes(lowerCaseQuery);
+                
+                return titleMatch || channelMatch || descriptionMatch;
+            });
+            
+            return results;
+        }
+        
+        function renderSearchResults(results, query) {
+            const searchResultsList = document.getElementById('search-results-list');
+            const searchResultsCount = document.getElementById('search-results-count');
+            
+            // 検索結果数を表示
+            searchResultsCount.textContent = `「${query}」の検索結果 ${results.length}件`;
+            
+            if (results.length === 0) {
+                searchResultsList.innerHTML = `
+                    <div class="no-results">
+                        <i class="fas fa-search"></i>
+                        <h3>検索結果が見つかりません</h3>
+                        <p>別のキーワードで検索してみてください</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            searchResultsList.innerHTML = '';
+            
+            results.forEach((video, index) => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'history-item';
+                
+                resultItem.innerHTML = `
+                    <div class="history-thumbnail">
+                        <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg" alt="${video.title}">
+                    </div>
+                    <div class="history-item-title">${video.title}</div>
+                    <div class="history-item-meta">
+                        <span>${video.channel}</span>
+                        <span>${video.views} 回視聴</span>
+                    </div>
+                    <div class="history-item-date">${video.date}</div>
+                `;
+                
+                resultItem.addEventListener('click', () => {
+                    // 動画を再生
+                    const videoIndex = videos.findIndex(v => v.id === video.id);
+                    playVideo(video.id, video.title, video.channel, videoIndex, video.description);
+                    // ホームページに移動
+                    sidebarItems.forEach(i => i.classList.remove('active'));
+                    document.querySelector('.sidebar-item[data-page="home"]').classList.add('active');
+                    homePage.style.display = 'flex';
+                    addVideoPage.style.display = 'none';
+                    historyPage.style.display = 'none';
+                    searchResultsPage.style.display = 'none';
+                });
+                
+                searchResultsList.appendChild(resultItem);
+            });
+        }
+
+        // 初期動画リスト
+        const initialVideos = [
+            {
+                id: 'dQw4w9WgXcQ',
+                title: 'Never Gonna Give You Up - Rick Astley (Official Music Video)',
+                channel: 'Rick Astley Official',
+                views: '1.2M',
+                date: '2年前',
+                duration: '3:32',
+                description: '1987年にリリースされたRick Astleyの代表曲「Never Gonna Give You Up」の公式ミュージックビデオです。この曲は世界中で大ヒットし、インターネット文化において「Rickrolling」として知られる現象の元となりました。',
+                addedDate: '2023-10-15',
+                category: 'music'
+            },
+            {
+                id: '9bZkp7q19f0',
+                title: 'PSY - GANGNAM STYLE (강남스타일) M/V',
+                channel: 'officialpsy',
+                views: '4.5B',
+                date: '11年前',
+                duration: '4:13',
+                description: 'PSYの世界的ヒット曲「GANGNAM STYLE」の公式ミュージックビデオです。',
+                addedDate: '2023-10-10',
+                category: 'music'
+            },
+            {
+                id: 'kJQP7kiw5Fk',
+                title: 'Luis Fonsi - Despacito ft. Daddy Yankee',
+                channel: 'LuisFonsiVEVO',
+                views: '7.8B',
+                date: '6年前',
+                duration: '4:41',
+                description: 'Luis Fonsiの「Despacito」公式ミュージックビデオです。',
+                addedDate: '2023-10-05',
+                category: 'music'
+            },
+            {
+                id: 'JGwWNGJdvx8',
+                title: 'Ed Sheeran - Shape of You [Official Video]',
+                channel: 'Ed Sheeran',
+                views: '5.7B',
+                date: '6年前',
+                duration: '4:23',
+                description: 'Ed Sheeranの大ヒット曲「Shape of You」の公式ミュージックビデオです。',
+                addedDate: '2023-09-28',
+                category: 'music'
+            },
+            {
+                id: 'fJ9rUzIMcZQ',
+                title: 'Queen - Bohemian Rhapsody (Official Video Remastered)',
+                channel: 'Queen Official',
+                views: '1.8B',
+                date: '4年前',
+                duration: '5:55',
+                description: 'Queenの名曲「Bohemian Rhapsody」の公式ミュージックビデオです。',
+                addedDate: '2023-09-20',
+                category: 'music'
+            }
+        ];
+
+        // ローカルストレージから動画リストを読み込む、または初期リストを使用
+        let videos = JSON.parse(localStorage.getItem('youtubeVideos')) || initialVideos;
+        
+        // DOM要素の取得
+        const mainVideo = document.getElementById('main-video');
+        const videoTitle = document.getElementById('video-title');
+        const videoDescription = document.getElementById('video-description');
+        const videoStats = document.getElementById('video-stats');
+        const videoList = document.getElementById('video-list');
+        const videoUrlInput = document.getElementById('video-url');
+        const videoTitleInput = document.getElementById('video-title-input');
+        const videoDescriptionInput = document.getElementById('video-description-input');
+        const addBtn = document.getElementById('add-btn');
+        const deleteCurrentVideoBtn = document.getElementById('delete-current-video');
+        const successMessage = document.getElementById('success-message');
+        const historyList = document.getElementById('history-list');
+        
+        // 現在再生中の動画のインデックスを追跡
+        let currentVideoIndex = 0;
+        
+        // 動画リストの表示
+        function renderVideoList() {
+            videoList.innerHTML = '';
+            
+            videos.forEach((video, index) => {
+                const videoCard = document.createElement('div');
+                videoCard.className = 'video-card';
+                
+                videoCard.innerHTML = `
+                    <div class="thumbnail-container">
+                        <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg" alt="${video.title}" class="thumbnail">
+                        <div class="video-duration">${video.duration}</div>
+                    </div>
+                    <div class="video-card-details">
+                        <div class="video-card-title">${video.title}</div>
+                        <div class="video-card-channel">${video.channel}</div>
+                        <div class="video-card-meta">${video.views} 回視聴 • ${video.date}</div>
+                    </div>
+                    <button class="video-card-delete" data-index="${index}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                videoCard.addEventListener('click', (e) => {
+                    // 削除ボタンがクリックされた場合は処理を中断
+                    if (e.target.closest('.video-card-delete')) {
+                        return;
+                    }
+                    // 動画を再生
+                    playVideo(video.id, video.title, video.channel, index, video.description);
+                });
+                
+                // 削除ボタンのイベントリスナー
+                const deleteBtn = videoCard.querySelector('.video-card-delete');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteVideo(index);
+                });
+                
+                videoList.appendChild(videoCard);
+            });
+        }
+        
+        // 履歴リストの表示
+        function renderHistoryList() {
+            historyList.innerHTML = '';
+            
+            if (videos.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-history">
+                        <i class="fas fa-history"></i>
+                        <h3>履歴がありません</h3>
+                        <p>動画を追加すると、ここに履歴が表示されます</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 追加日でソート（新しい順）
+            const sortedVideos = [...videos].sort((a, b) => {
+                return new Date(b.addedDate) - new Date(a.addedDate);
+            });
+            
+            sortedVideos.forEach((video, index) => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                
+                historyItem.innerHTML = `
+                    <div class="history-thumbnail">
+                        <img src="https://img.youtube.com/vi/${video.id}/hqdefault.jpg" alt="${video.title}">
+                    </div>
+                    <div class="history-item-title">${video.title}</div>
+                    <div class="history-item-meta">
+                        <span>${video.channel}</span>
+                        <span>${video.views} 回視聴</span>
+                    </div>
+                    <div class="history-item-date">追加日: ${formatDate(video.addedDate)}</div>
+                `;
+                
+                historyItem.addEventListener('click', () => {
+                    // 動画を再生
+                    const videoIndex = videos.findIndex(v => v.id === video.id);
+                    playVideo(video.id, video.title, video.channel, videoIndex, video.description);
+                    // ホームページに移動
+                    sidebarItems.forEach(i => i.classList.remove('active'));
+                    document.querySelector('.sidebar-item[data-page="home"]').classList.add('active');
+                    homePage.style.display = 'flex';
+                    addVideoPage.style.display = 'none';
+                    historyPage.style.display = 'none';
+                    searchResultsPage.style.display = 'none';
+                });
+                
+                historyList.appendChild(historyItem);
+            });
+        }
+        
+        // 日付フォーマット関数
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}年${month}月${day}日`;
+        }
+        
+        // 動画を再生する関数
+        function playVideo(videoId, title, channel, index, description) {
+            mainVideo.src = `https://www.youtube.com/embed/${videoId}`;
+            videoTitle.textContent = title;
+            videoDescription.textContent = description || `${channel}の公式ミュージックビデオです。この動画はYouTube風プレイヤーで再生されています。`;
+            videoStats.innerHTML = `<span>${Math.floor(Math.random() * 10) + 1}M 回視聴</span> • <span>${Math.floor(Math.random() * 5) + 1}年前</span>`;
+            currentVideoIndex = index;
+        }
+        
+        // 動画を追加する関数
+        function addVideo() {
+            const url = videoUrlInput.value.trim();
+            const title = videoTitleInput.value.trim();
+            const description = videoDescriptionInput.value.trim();
+            
+            if (!url || !title) {
+                alert('URLとタイトルを入力してください');
+                return;
+            }
+            
+            // YouTubeのURLから動画IDを抽出
+            let videoId = '';
+            
+            // 様々なYouTube URL形式に対応
+            if (url.includes('youtube.com/watch?v=')) {
+                videoId = url.split('v=')[1];
+                const ampersandPosition = videoId.indexOf('&');
+                if (ampersandPosition !== -1) {
+                    videoId = videoId.substring(0, ampersandPosition);
+                }
+            } else if (url.includes('youtu.be/')) {
+                videoId = url.split('youtu.be/')[1];
+                const questionMarkPosition = videoId.indexOf('?');
+                if (questionMarkPosition !== -1) {
+                    videoId = videoId.substring(0, questionMarkPosition);
+                }
+            } else if (url.match(/^[a-zA-Z0-9_-]{11}$/)) {
+                // 動画IDのみが入力された場合
+                videoId = url;
+            } else {
+                alert('有効なYouTube動画URLを入力してください');
+                return;
+            }
+            
+            // 現在の日付を取得
+            const currentDate = new Date().toISOString().split('T')[0];
+            
+            // 動画リストに追加
+            const newVideo = {
+                id: videoId,
+                title: title,
+                channel: 'あなたのチャンネル',
+                views: '0',
+                date: '今日',
+                duration: '0:00',
+                description: description || '説明がありません',
+                addedDate: currentDate,
+                category: 'music'
+            };
+            
+            videos.unshift(newVideo);
+            localStorage.setItem('youtubeVideos', JSON.stringify(videos));
+            
+            // リストを再表示
+            renderVideoList();
+            
+            // 成功メッセージを表示
+            successMessage.classList.add('active');
+            
+            // 3秒後に成功メッセージを非表示
+            setTimeout(() => {
+                successMessage.classList.remove('active');
+            }, 3000);
+            
+            // 入力フィールドをクリア
+            videoUrlInput.value = '';
+            videoTitleInput.value = '';
+            videoDescriptionInput.value = '';
+            
+            // ホームページに戻る
+            sidebarItems.forEach(i => i.classList.remove('active'));
+            document.querySelector('.sidebar-item[data-page="home"]').classList.add('active');
+            homePage.style.display = 'flex';
+            addVideoPage.style.display = 'none';
+            historyPage.style.display = 'none';
+            searchResultsPage.style.display = 'none';
+            
+            // 追加した動画を再生
+            playVideo(newVideo.id, newVideo.title, newVideo.channel, 0, newVideo.description);
+        }
+        
+        // 動画を削除する関数
+        function deleteVideo(index) {
+            if (videos.length <= 1) {
+                alert('最後の動画は削除できません');
+                return;
+            }
+            
+            if (confirm('この動画を削除しますか？')) {
+                videos.splice(index, 1);
+                localStorage.setItem('youtubeVideos', JSON.stringify(videos));
+                
+                // リストを再表示
+                renderVideoList();
+                
+                // 削除した動画が現在再生中の動画だった場合
+                if (index === currentVideoIndex) {
+                    // 最初の動画を再生
+                    playVideo(videos[0].id, videos[0].title, videos[0].channel, 0, videos[0].description);
+                } else if (index < currentVideoIndex) {
+                    // 現在のインデックスを調整
+                    currentVideoIndex--;
+                }
+            }
+        }
+        
+        // 現在再生中の動画を削除する関数
+        function deleteCurrentVideo() {
+            deleteVideo(currentVideoIndex);
+        }
+        
+        // イベントリスナーの設定
+        addBtn.addEventListener('click', addVideo);
+        deleteCurrentVideoBtn.addEventListener('click', deleteCurrentVideo);
+        
+        // 初期表示
+        renderVideoList();
+        if (videos.length > 0) {
+            playVideo(videos[0].id, videos[0].title, videos[0].channel, 0, videos[0].description);
+        }
+    </script>
+</body>
+</html>
